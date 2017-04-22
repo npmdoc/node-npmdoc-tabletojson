@@ -1,0 +1,200 @@
+<html><head></head><body><div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a href="https://github.com/iaincollins/tabletojson">tabletojson (v0.4.0)</a>
+</h1>
+<h4>Converts HTML tables to JSON objects</h4>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.tabletojson">module tabletojson</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.tabletojson.convert">
+            function <span class="apidocSignatureSpan">tabletojson.</span>convert
+            <span class="apidocSignatureSpan">(html)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.tabletojson.convertUrl">
+            function <span class="apidocSignatureSpan">tabletojson.</span>convertUrl
+            <span class="apidocSignatureSpan">(url, callback)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.tabletojson" id="apidoc.module.tabletojson">module tabletojson</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.tabletojson.convert" id="apidoc.element.tabletojson.convert">
+        function <span class="apidocSignatureSpan">tabletojson.</span>convert
+        <span class="apidocSignatureSpan">(html)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function convert(html) {
+  var jsonResponse = [];
+  var $ = cheerio.load(html);
+
+  $('table').each(function(i, table) {
+    var tableAsJson = [];
+    // Get column headings
+    // @fixme Doesn't support vertical column headings.
+    // @todo Try to support badly formated tables.
+    var columnHeadings = [];
+    $(table).find('tr').each(function(i, row) {
+      $(row).find('th').each(function(j, cell) {
+        columnHeadings[j] = $(cell).text().trim();
+      });
+    });
+
+    // Fetch each row
+    $(table).find('tr').each(function(i, row) {
+      var rowAsJson = {};
+      $(row).find('td').each(function(j, cell) {
+        if (columnHeadings[j]) {
+          rowAsJson[ columnHeadings[j] ] = $(cell).text().trim();
+        } else {
+          rowAsJson[j] = $(cell).text().trim();
+        }
+      });
+
+      // Skip blank rows
+      if (JSON.stringify(rowAsJson) != '{}')
+        tableAsJson.push(rowAsJson);
+    });
+
+    // Add the table to the response
+    if (tableAsJson.length != 0)
+      jsonResponse.push(tableAsJson);
+  });
+  return jsonResponse;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+You might want to use it with a module like 'cheerio' if you want to parse specific tables identified by id or class (
+i.e. select them with cheerio and pass the HTML of them as a string).
+
+## Example usage
+
+``` javascript
+// Convert an HTML blob into an array of all the tables on the page
+var tabletojson = require('tabletojson');
+var tablesAsJson = tabletojson.<span class="apidocCodeKeywordSpan">convert</span>(html);
+var firstTableAsJson = tablesAsJson[0];
+var secondTableAsJson = tablesAsJson[1];
+...
+```
+
+``` javascript
+// Fetch a URL and parse all it's tables into JSON, using a callback
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.tabletojson.convertUrl" id="apidoc.element.tabletojson.convertUrl">
+        function <span class="apidocSignatureSpan">tabletojson.</span>convertUrl
+        <span class="apidocSignatureSpan">(url, callback)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">convertUrl = function (url, callback) {
+  if (typeof(callback) === "function") {
+    // Use a callback (if passed)
+    fetchUrl(url)
+    .then(function(html) {
+      callback.call( this, convert(html) );
+    });
+  } else {
+    // If no callback, return a promise
+    return fetchUrl(url)
+    .then(function(html) {
+      return convert(html);
+    });
+  }
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+...
+```
+
+``` javascript
+// Fetch a URL and parse all it's tables into JSON, using a callback
+var tabletojson = require('tabletojson');
+var url = 'https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes';
+tabletojson.<span class="apidocCodeKeywordSpan">convertUrl</span>(url, function(tablesAsJson) {
+  var listofSovereignStates = tablesAsJson[0];
+});
+```
+
+``` javascript
+// Fetch a URL and parse all it's tables into JSON, using promises
+var tabletojson = require('tabletojson');
+...</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
+</body></html>
